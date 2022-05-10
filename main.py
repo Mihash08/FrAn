@@ -1,10 +1,14 @@
+import asyncio
+
 from kivy.app import App
+from kivy.app import async_runTouchApp
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from database import DataBase
+from tlagent import TLAgent
 
 
 class CreateAccountWindow(Screen):
@@ -39,13 +43,16 @@ class LoginWindow(Screen):
     phone = ObjectProperty(None)
     password = ObjectProperty(None)
 
+    async def getUsersTL(self):
+        print("Getting users")
+        agent = TLAgent("Mihash08", "+79251851096")
+        await agent.getUsers()
+        print("Got users")
+
     def loginBtn(self):
-        if db.validate(self.phone.text, self.password.text):
-            MainWindow.current = self.phone.text
-            self.reset()
-            sm.current = "main"
-        else:
-            invalidLogin()
+        thisloop = asyncio.get_event_loop()
+        coroutine = self.getUsersTL()
+        thisloop.run_until_complete(coroutine)
 
     def createBtn(self):
         self.reset()
@@ -96,7 +103,7 @@ kv = Builder.load_file("my.kv")
 sm = WindowManager()
 db = DataBase("data.txt")
 
-screens = [LoginWindow(name="login"), CreateAccountWindow(name="create"),MainWindow(name="main")]
+screens = [LoginWindow(name="login"), CreateAccountWindow(name="create"), MainWindow(name="main")]
 for screen in screens:
     sm.add_widget(screen)
 
