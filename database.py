@@ -4,23 +4,28 @@ import datetime
 class DataBase:
     def __init__(self, filename):
         self.filename = filename
-        self.users = None
         self.file = None
-        self.load()
+        self.username = ""
+        self.phone = ""
 
     def load(self):
         self.file = open(self.filename, "r")
-        self.users = {}
 
         for line in self.file:
-            email, password, name, created = line.strip().split(";")
-            self.users[email] = (password, name, created)
+            phone, username = line.strip().split(";")
+            self.username = username
+            self.phone = phone
 
         self.file.close()
 
-    def get_user(self, email):
-        if email in self.users:
-            return self.users[email]
+    def get_username(self):
+        if self.username != "":
+            return self.username
+        else:
+            return -1
+    def get_phone(self):
+        if self.phone != "":
+            return self.phone
         else:
             return -1
 

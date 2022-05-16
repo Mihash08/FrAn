@@ -1,9 +1,15 @@
 import json
 import asyncio
+import getpass
+import inspect
+import os
+import sys
+import typing
+import warnings
 
 from datetime import date, datetime
 
-from telethon import TelegramClient, types, functions
+from telethon import TelegramClient, types, functions, utils, errors
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import GetHistoryRequest, GetMessagesRequest
 from telethon.tl.types import PeerChannel, PeerUser
@@ -25,10 +31,116 @@ class DateTimeEncoder(json.JSONEncoder):
 
 
 class TLAgent:
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(TLAgent, cls).__new__(cls)
+        return cls.instance
     def __init__(self, username, phone):
         self.username = username
         self.phone = phone
         self.client = TelegramClient(username, api_id, api_hash)
+
+    async def _start(
+            self, phone):
+        if not self.client.is_connected():
+            await self.client.connect()
+
+        me = await self.client.get_me()
+        if me is not None:
+            return self.client
+
+        while callable(phone):
+            value = phone()
+            if inspect.isawaitable(value):
+                value = await value
+
+            phone = utils.parse_phone(value) or phone
+
+        me = None
+        attempts = 0
+        # two_step_detected = False
+        await self.client.send_code_request(phone)
+
+
+
+    async def tryCode(self, phone, code):
+        # sign_up = False
+        try:
+            value = code
+            if inspect.isawaitable(value):
+                value = await value
+
+            if not value:
+                raise errors.PhoneCodeEmptyError(request=None)
+
+            # Raises SessionPasswordNeededError if 2FA enabled
+            me = await self.client.sign_in(phone, code=value)
+        # except errors.SessionPasswordNeededError:
+        #    two_step_detected = True
+        #    break
+
+        except (errors.PhoneCodeEmptyError,
+                errors.PhoneCodeExpiredError,
+                errors.PhoneCodeHashEmptyError,
+                errors.PhoneCodeInvalidError):
+            print('Invalid code. Please try again.', file=sys.stderr)
+            raise errors.PhoneCodeInvalidError
+        return me
+
+    async def logOut(self):
+        await self.client.log_out()
+
+
+    async def logIn(self):
+        try:
+            await self._start(phone=self.phone)
+            # await self.client.start(phone=self.phone, code_callback=code_callback)
+        except Exception as e:
+            print("LOGIN ERROR: " + str(e))
+            return -1
+        print("Client Created")
+        # Ensure you're authorized
+        if not await self.client.is_user_authorized():
+            return 1
+        else:
+            return 0
+
+        if not await self.client.is_user_authorized():
+            await self.client.send_code_request(self.phone)
+            try:
+                await self.client.sign_in(self.phone, input('Enter the code: '))
+            except SessionPasswordNeededError:
+                await self.client.sign_in(password=input('Password: '))
+        return 1
+    async def getUsers(self):
+
+        contact_ids = None
+        contacts = None
+        try:
+            contacts = await self.client(functions.contacts.GetContactsRequest(hash=0))
+            contact_ids = (user.id for user in contacts.users)
+            print('All contacts collected successfully')
+        except Exception as e:
+            print(e)
+
+        with open("users.txt", "w", encoding="utf-8") as f:
+            for user in contacts.users:
+                if user.id != None:
+                    id = str(user.id)
+                else:
+                    id = -1
+                if user.first_name != None:
+                    name = user.first_name
+                else:
+                    name = " "
+                if user.last_name != None:
+                    lname = user.last_name
+                else:
+                    lname = " "
+
+                f.write(id + ";" + name + ";" + lname + "\n")
+            f.close()
+        return contact_ids
 
     async def getMessages(self):
         user_id = self.entity
@@ -65,26 +177,3 @@ class TLAgent:
                 break
         print(total_messages)
         return all_messages
-
-    async def getUsers(self):
-        await self.client.start()
-        print("Client Created")
-        # Ensure you're authorized
-        if not await self.client.is_user_authorized():
-            await self.client.send_code_request(self.phone)
-            try:
-                await self.client.sign_in(self.phone, input('Enter the code: '))
-            except SessionPasswordNeededError:
-                await self.client.sign_in(password=input('Password: '))
-        contact_ids = None
-        contacts = None
-        try:
-            contacts = await self.client(functions.contacts.GetContactsRequest(hash=0))
-            contact_ids = (user.id for user in contacts.users)
-            print('All contacts collected successfully')
-        except Exception as e:
-            print(e)
-
-        with open('channel_messages.json', 'w') as outfile:
-            json.dump(contact_ids, outfile, cls=DateTimeEncoder)
-        return contact_ids

@@ -11,52 +11,65 @@ from database import DataBase
 from tlagent import TLAgent
 
 
-class CreateAccountWindow(Screen):
-    namee = ObjectProperty(None)
-    email = ObjectProperty(None)
-    password = ObjectProperty(None)
+class LoginCodeWindow(Screen):
+    code = ObjectProperty(None)
 
     def submit(self):
-        if self.namee.text != "" and self.email.text != "" and self.email.text.count("@") == 1 and self.email.text.count(".") > 0:
-            if self.password != "":
-                db.add_user(self.email.text, self.password.text, self.namee.text)
+        print("ERROR SUBMINTIN")
+        #TODO submit
 
-                self.reset()
-
-                sm.current = "login"
-            else:
-                invalidForm()
-        else:
-            invalidForm()
 
     def login(self):
         self.reset()
         sm.current = "login"
 
     def reset(self):
-        self.email.text = ""
-        self.password.text = ""
-        self.namee.text = ""
+        self.code.text = ""
 
 
 class LoginWindow(Screen):
     phone = ObjectProperty(None)
-    password = ObjectProperty(None)
+    username = ObjectProperty(None)
+    agent = TLAgent("", "")
+    wrong_login = ObjectProperty(None)
 
     async def getUsersTL(self):
         print("Getting users")
-        agent = TLAgent("Mihash08", "+79251851096")
-        await agent.getUsers()
-        print("Got users")
+        agent = TLAgent("Mihash08", "+7925185096")
+        result = await agent.getUsers()
+        if result == -1:
+            print("ERROR WHILE GETTING USERS")
+        else:
+            print("Got users")
+
+    async def logIn(self):
+        agent = TLAgent(self.username.text, self.phone.text)
+
+        result = await agent.logIn()
+        if result == -1:
+            self.wrong_login.text = "Wrong phone or (and) username"
+        elif result == 0:
+            self.wrong_login.text = ""
+            sm.current = "code"
+        else:
+            self.wrong_login.text = ""
+            sm.current = "main"
+
+
+    async def logOut(self):
+        agent = TLAgent(self.username.text, self.phone.text)
+        await agent.logOut()
 
     def loginBtn(self):
+        self.wrong_login.text = "Connecting..."
         thisloop = asyncio.get_event_loop()
-        coroutine = self.getUsersTL()
+        coroutine = self.logIn()
         thisloop.run_until_complete(coroutine)
 
-    def createBtn(self):
-        self.reset()
-        sm.current = "create"
+    def logOutBtn(self):
+        thisloop = asyncio.get_event_loop()
+        coroutine = self.logOut()
+        thisloop.run_until_complete(coroutine)
 
     def reset(self):
         self.phone.text = ""
@@ -103,7 +116,7 @@ kv = Builder.load_file("my.kv")
 sm = WindowManager()
 db = DataBase("data.txt")
 
-screens = [LoginWindow(name="login"), CreateAccountWindow(name="create"), MainWindow(name="main")]
+screens = [LoginWindow(name="login"), LoginCodeWindow(name="code"), MainWindow(name="main")]
 for screen in screens:
     sm.add_widget(screen)
 
