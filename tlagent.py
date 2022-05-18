@@ -31,23 +31,24 @@ class DateTimeEncoder(json.JSONEncoder):
 
 
 class TLAgent:
-    #client = TelegramClient("", 0, "")
-    #phone = ""
-    #username = ""
+    client = None
+    phone = ""
+    username = ""
 
-    def __init__(self, username, phone):
-        self.username = username
-        self.phone = phone
-        self.client = TelegramClient(username, api_id, api_hash)
+    @staticmethod
+    def set(username, phone):
+        TLAgent.username = username
+        TLAgent.phone = phone
+        TLAgent.client = TelegramClient(username, api_id, api_hash)
 
-    async def _start(
-            self, phone):
-        if not self.client.is_connected():
-            await self.client.connect()
+    @staticmethod
+    async def _start(phone):
+        if not TLAgent.client.is_connected():
+            await TLAgent.client.connect()
 
-        me = await self.client.get_me()
+        me = await TLAgent.client.get_me()
         if me is not None:
-            return self.client
+            return TLAgent.client
 
         while callable(phone):
             value = phone()
@@ -59,10 +60,10 @@ class TLAgent:
         me = None
         attempts = 0
         # two_step_detected = False
-        await self.client.send_code_request(phone)
+        await TLAgent.client.send_code_request(phone)
 
     @staticmethod
-    async def tryCode(self, phone, code):
+    async def tryCode(phone, code):
         # sign_up = False
         try:
             value = code
@@ -73,7 +74,7 @@ class TLAgent:
                 raise errors.PhoneCodeEmptyError(request=None)
 
             # Raises SessionPasswordNeededError if 2FA enabled
-            me = await self.client.sign_in(phone, code=value)
+            me = await TLAgent.client.sign_in(phone, code=value)
         # except errors.SessionPasswordNeededError:
         #    two_step_detected = True
         #    break
@@ -86,39 +87,42 @@ class TLAgent:
             raise errors.PhoneCodeInvalidError
         return me
 
-    async def logOut(self):
-        await self.client.log_out()
+    @staticmethod
+    async def logOut():
+        await TLAgent.client.log_out()
 
-
-    async def logIn(self):
+    @staticmethod
+    async def logIn():
         try:
-            await self._start(phone=self.phone)
-            if not await self.client.is_user_authorized():
-                await self.tryCode(phone=self.phone, code=int(input("input code")))
+            await TLAgent._start(phone=TLAgent.phone)
+            if not await TLAgent.client.is_user_authorized():
+                await TLAgent.tryCode(phone=TLAgent.phone, code=int(input("input code")))
             # self.client.start(phone=self.phone)
         except Exception as e:
             print("LOGIN ERROR: " + str(e))
             return -1
         print("Client Created")
         # Ensure you're authorized
-        if await self.client.is_user_authorized():
+        if await TLAgent.client.is_user_authorized():
             return 1
         else:
             return 0
 
-        if not await self.client.is_user_authorized():
-            await self.client.send_code_request(self.phone)
+        if not await TLAgent.client.is_user_authorized():
+            await TLAgent.client.send_code_request(TLAgent.phone)
             try:
-                await self.client.sign_in(self.phone, input('Enter the code: '))
+                await TLAgent.client.sign_in(TLAgent.phone, input('Enter the code: '))
             except SessionPasswordNeededError:
-                await self.client.sign_in(password=input('Password: '))
+                await TLAgent.client.sign_in(password=input('Password: '))
         return 1
-    async def getUsers(self):
+
+    @staticmethod
+    async def getUsers():
 
         contact_ids = None
         contacts = None
         try:
-            contacts = await self.client(functions.contacts.GetContactsRequest(hash=0))
+            contacts = await TLAgent.client(functions.contacts.GetContactsRequest(hash=0))
             contact_ids = (user.id for user in contacts.users)
             print('All contacts collected successfully')
         except Exception as e:
@@ -148,12 +152,13 @@ class TLAgent:
                 json.dump(all_contacts, outfile)
         return contact_ids
 
-    async def getMessages(self):
-        user_id = self.entity
+    @staticmethod
+    async def getMessages():
+        user_id = TLAgent.entity
         entity = user_id
-        print(self.user.first_name, " ", self.user.last_name)
+        print(TLAgent.user.first_name, " ", TLAgent.user.last_name)
 
-        my_channel = await self.client.get_entity(entity)
+        my_channel = await TLAgent.client.get_entity(entity)
 
         offset_id = 0
         limit = 5000
@@ -162,7 +167,7 @@ class TLAgent:
         total_count_limit = 0
 
         while True:
-            history = await self.client(GetHistoryRequest(
+            history = await TLAgent.client(GetHistoryRequest(
                 peer=my_channel,
                 offset_id=offset_id,
                 offset_date=None,

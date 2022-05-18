@@ -30,22 +30,20 @@ class LoginCodeWindow(Screen):
 class LoginWindow(Screen):
     phone = ObjectProperty(None)
     username = ObjectProperty(None)
-    agent = TLAgent("", "")
     wrong_login = ObjectProperty(None)
 
     async def getUsersTL(self):
         print("Getting users")
-        agent = TLAgent("Mihash08", "+7925185096")
-        result = await agent.getUsers()
+        result = await TLAgent.getUsers()
         if result == -1:
             print("ERROR WHILE GETTING USERS")
         else:
             print("Got users")
 
     async def logIn(self):
-        agent = TLAgent(self.username.text, self.phone.text)
+        TLAgent.set(self.username.text, self.phone.text)
 
-        result = await agent.logIn()
+        result = await TLAgent.logIn()
         if result == -1:
             self.wrong_login.text = "Wrong phone or (and) username"
         elif result == 0:
@@ -53,14 +51,13 @@ class LoginWindow(Screen):
             sm.current = "code"
         else:
             self.wrong_login.text = ""
-            await agent.getUsers()
+            await TLAgent.getUsers()
             #sm.current = "main"
             #await agent.getUsers()
 
 
     async def logOut(self):
-        agent = TLAgent(self.username.text, self.phone.text)
-        await agent.logOut()
+        await TLAgent.logOut()
 
     def loginBtn(self):
         self.wrong_login.text = "Connecting..."
