@@ -31,10 +31,10 @@ class DateTimeEncoder(json.JSONEncoder):
 
 
 class TLAgent:
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(TLAgent, cls).__new__(cls)
-        return cls.instance
+    #client = TelegramClient("", 0, "")
+    #phone = ""
+    #username = ""
+
     def __init__(self, username, phone):
         self.username = username
         self.phone = phone
@@ -61,8 +61,7 @@ class TLAgent:
         # two_step_detected = False
         await self.client.send_code_request(phone)
 
-
-
+    @staticmethod
     async def tryCode(self, phone, code):
         # sign_up = False
         try:
@@ -94,13 +93,15 @@ class TLAgent:
     async def logIn(self):
         try:
             await self._start(phone=self.phone)
-            # await self.client.start(phone=self.phone, code_callback=code_callback)
+            if not await self.client.is_user_authorized():
+                await self.tryCode(phone=self.phone, code=int(input("input code")))
+            # self.client.start(phone=self.phone)
         except Exception as e:
             print("LOGIN ERROR: " + str(e))
             return -1
         print("Client Created")
         # Ensure you're authorized
-        if not await self.client.is_user_authorized():
+        if await self.client.is_user_authorized():
             return 1
         else:
             return 0
@@ -123,7 +124,8 @@ class TLAgent:
         except Exception as e:
             print(e)
 
-        with open("users.txt", "w", encoding="utf-8") as f:
+        all_contacts = []
+        with open("dat\\users.txt", "w", encoding="utf-8") as f:
             for user in contacts.users:
                 if user.id != None:
                     id = str(user.id)
@@ -137,15 +139,20 @@ class TLAgent:
                     lname = user.last_name
                 else:
                     lname = " "
-
+                print(user)
                 f.write(id + ";" + name + ";" + lname + "\n")
+                all_contacts.append({"id": user.id, "first_name": user.first_name, "last_name": user.last_name,
+                                     "username": user.username, "phone": user.phone, "messages": None})
             f.close()
+            with open('dat\\data_users.json', 'w', encoding='utf-8') as outfile:
+                json.dump(all_contacts, outfile)
         return contact_ids
 
     async def getMessages(self):
         user_id = self.entity
         entity = user_id
         print(self.user.first_name, " ", self.user.last_name)
+
         my_channel = await self.client.get_entity(entity)
 
         offset_id = 0

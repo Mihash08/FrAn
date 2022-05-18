@@ -15,7 +15,7 @@ class LoginCodeWindow(Screen):
     code = ObjectProperty(None)
 
     def submit(self):
-        print("ERROR SUBMINTIN")
+        print("ERROR SUBMITING")
         #TODO submit
 
 
@@ -53,7 +53,9 @@ class LoginWindow(Screen):
             sm.current = "code"
         else:
             self.wrong_login.text = ""
-            sm.current = "main"
+            await agent.getUsers()
+            #sm.current = "main"
+            #await agent.getUsers()
 
 
     async def logOut(self):
