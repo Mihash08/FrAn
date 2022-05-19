@@ -106,34 +106,54 @@
 
 <MainWindow>:
     name: "main"
-    n: n
-    email: email
-    created:created
+    table: table
 
-    FloatLayout:
-        Label:
-            id: n
-            pos_hint:{"x": 0.1, "top":0.9}
-            size_hint:0.8, 0.2
-            text: "Account Name: "
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
 
-        Label:
-            id: email
-            pos_hint:{"x": 0.1, "top":0.7}
-            size_hint:0.8, 0.2
-            text: "Email: "
+        Table:
+            id: table
+            orientation: "vertical"
+            size_hint_y: None
+            height: self.minimum_height
+            padding: 50, 50, 50, 50
 
-        Label:
-            id: created
-            pos_hint:{"x": 0.1, "top":0.5}
-            size_hint:0.8, 0.2
-            text: "Created: "
+<Row>:
+    spacing: 50
+    size_hint_y: None
+    size_hint_x: 1
+    height: 100
+    name: name
+    phone: phone
+    Label:
+        id: name
+        text: "name"
 
-        Button:
-            pos_hint:{"x":0.2, "y": 0.1}
-            size_hint:0.6,0.2
-            text: "Log Out"
-            on_release:
-                app.root.current = "login"
-                root.logoutBtn
-                root.manager.transition.direction = "down"
+    Label:
+        id: phone
+        text: "phone"
+
+    Label:
+        id:count
+        text: 'message count'
+
+    Button:
+        text: 'analyse'
+        on_release:
+            root.analyse()
+
+<UserWindow>:
+    name: "user"
+    table: table
+
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+
+        Table:
+            id: table
+            orientation: "vertical"
+            size_hint_y: None
+            height: self.minimum_height
+            padding: 50, 50, 50, 50

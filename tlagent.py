@@ -9,15 +9,18 @@ import warnings
 
 from datetime import date, datetime
 
+import telethon.tl.types
 from telethon import TelegramClient, types, functions, utils, errors
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import GetHistoryRequest, GetMessagesRequest
 from telethon.tl.types import PeerChannel, PeerUser
 
-#username = "Mihash08"
+# username = "Mihash08"
 api_id = 9770358
 api_hash = "e9d3d03202a6d1c827187ac8cbc604b9"
-#phone = "+79251851096"
+
+
+# phone = "+79251851096"
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -63,7 +66,7 @@ class TLAgent:
         await TLAgent.client.send_code_request(phone)
 
     @staticmethod
-    async def tryCode(phone, code):
+    async def tryCode(code):
         # sign_up = False
         try:
             value = code
@@ -74,7 +77,7 @@ class TLAgent:
                 raise errors.PhoneCodeEmptyError(request=None)
 
             # Raises SessionPasswordNeededError if 2FA enabled
-            me = await TLAgent.client.sign_in(phone, code=value)
+            me = await TLAgent.client.sign_in(TLAgent.phone, code=value)
         # except errors.SessionPasswordNeededError:
         #    two_step_detected = True
         #    break
@@ -95,8 +98,8 @@ class TLAgent:
     async def logIn():
         try:
             await TLAgent._start(phone=TLAgent.phone)
-            if not await TLAgent.client.is_user_authorized():
-                await TLAgent.tryCode(phone=TLAgent.phone, code=int(input("input code")))
+            # if not await TLAgent.client.is_user_authorized():
+            #    await TLAgent.tryCode(phone=TLAgent.phone, code=int(input("input code")))
             # self.client.start(phone=self.phone)
         except Exception as e:
             print("LOGIN ERROR: " + str(e))
@@ -117,8 +120,26 @@ class TLAgent:
         return 1
 
     @staticmethod
-    async def getUsers():
+    async def scanUsers():
+        users = []
 
+        f = open('dat\\data_users.json')
+
+        data = json.load(f)
+        for input in data:
+            users.append(telethon.tl.types.User(int(input['id']), first_name=input['first_name'],
+                                               last_name=input['last_name'], phone=input['phone'],
+                                               username=input['username']))
+        return users
+
+
+    @staticmethod
+    async def getUsers():
+        if os.stat('dat\\data_users.json').st_size == 0:
+            print("SCANNING USERS")
+        else:
+            print("GETTING USERS FROM JSON")
+            return await TLAgent.scanUsers()
         contact_ids = None
         contacts = None
         try:
@@ -129,28 +150,25 @@ class TLAgent:
             print(e)
 
         all_contacts = []
-        with open("dat\\users.txt", "w", encoding="utf-8") as f:
-            for user in contacts.users:
-                if user.id != None:
-                    id = str(user.id)
-                else:
-                    id = -1
-                if user.first_name != None:
-                    name = user.first_name
-                else:
-                    name = " "
-                if user.last_name != None:
-                    lname = user.last_name
-                else:
-                    lname = " "
-                print(user)
-                f.write(id + ";" + name + ";" + lname + "\n")
-                all_contacts.append({"id": user.id, "first_name": user.first_name, "last_name": user.last_name,
-                                     "username": user.username, "phone": user.phone, "messages": None})
-            f.close()
+        for user in contacts.users:
+            if user.id != None:
+                id = str(user.id)
+            else:
+                id = -1
+            if user.first_name != None:
+                name = user.first_name
+            else:
+                name = " "
+            if user.last_name != None:
+                lname = user.last_name
+            else:
+                lname = " "
+            # print(user)
+            all_contacts.append({"id": user.id, "first_name": user.first_name, "last_name": user.last_name,
+                                 "username": user.username, "phone": user.phone, "messages": None})
             with open('dat\\data_users.json', 'w', encoding='utf-8') as outfile:
                 json.dump(all_contacts, outfile)
-        return contact_ids
+        return contacts.users
 
     @staticmethod
     async def getMessages():
