@@ -54,6 +54,8 @@
 
     code: code
 
+    wrong_code: wrong_code
+
     FloatLayout:
         cols:1
 
@@ -83,7 +85,7 @@
                 id: wrong_code
                 size_hint: 0.5,0.12
                 pos_hint: {"x":0.5, "top":0.6}
-                text: "Wrong code"
+                text: ""
                 font_size: (root.width**2 + root.height**2) / 14**4
 
         Button:
@@ -107,17 +109,34 @@
 <MainWindow>:
     name: "main"
     table: table
+    FloatLayout:
+        Button:
+            pos_hint:{"x":0,"y":0.75}
+            size_hint: 0.33, 0.25
+            text: "Back"
+            on_release:
+                root.back()
+        Button:
+            pos_hint:{"x":0.33,"y":0.75}
+            size_hint: 0.33, 0.25
+            text: "Refresh"
+            on_release:
+                root.refresh()
+        Button:
+            pos_hint:{"x":0.66,"y":0.75}
+            size_hint: 0.34, 0.25
+            text: "Sort"
+        ScrollView:
+            size_hint: 1, 0.75
+            do_scroll_x: False
+            do_scroll_y: True
 
-    ScrollView:
-        do_scroll_x: False
-        do_scroll_y: True
-
-        Table:
-            id: table
-            orientation: "vertical"
-            size_hint_y: None
-            height: self.minimum_height
-            padding: 50, 50, 50, 50
+            Table:
+                id: table
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                padding: 50, 50, 50, 50
 
 <Row>:
     spacing: 50
@@ -126,6 +145,8 @@
     height: 100
     name: name
     phone: phone
+    count: count
+
     Label:
         id: name
         text: "name"
@@ -136,7 +157,7 @@
 
     Label:
         id:count
-        text: 'message count'
+        text: "Message count unknown"
 
     Button:
         text: 'analyse'
@@ -145,15 +166,48 @@
 
 <UserWindow>:
     name: "user"
-    table: table
+    username: username
+    login: login
+    phone: phone
+    count: count
 
-    ScrollView:
-        do_scroll_x: False
-        do_scroll_y: True
 
-        Table:
-            id: table
-            orientation: "vertical"
-            size_hint_y: None
-            height: self.minimum_height
-            padding: 50, 50, 50, 50
+    FloatLayout:
+        Label:
+            pos_hint:{"x":0.33,"y":0.8}
+            size_hint: 0.33, 0.25
+            font_size: (1000**2 + root.height**2) / 13**4
+            id: username
+            text: 'name'
+        Label:
+            pos_hint:{"x":0.33,"y":0.72}
+            size_hint: 0.33, 0.25
+            font_size: (800**2 + root.height**2) / 13**4
+            id: login
+            text: 'login'
+        Label:
+            pos_hint:{"x":0.33,"y":0.65}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: phone
+            text: 'phone'
+        Label:
+            pos_hint:{"x":0.33,"y":0.55}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: count
+            text: 'Message count unknown'
+        Button:
+            pos_hint:{"x":0,"y":0}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            text: 'Back'
+            on_release:
+                root.back()
+        Button:
+            pos_hint:{"x":0.33,"y":0}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            text: 'Analyse'
+            on_release:
+                root.analyse()

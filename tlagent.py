@@ -1,18 +1,16 @@
 import json
-import asyncio
-import getpass
 import inspect
 import os
 import sys
-import typing
-import warnings
+import datetime
 
-from datetime import date, datetime
+from datetime import timedelta, datetime as dt
+from typing import Optional, List
 
 import telethon.tl.types
-from telethon import TelegramClient, types, functions, utils, errors
+from telethon import TelegramClient, functions, utils, errors
 from telethon.errors import SessionPasswordNeededError
-from telethon.tl.functions.messages import GetHistoryRequest, GetMessagesRequest
+from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.tl.types import PeerChannel, PeerUser
 
 # username = "Mihash08"
@@ -25,7 +23,7 @@ api_hash = "e9d3d03202a6d1c827187ac8cbc604b9"
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, datetime):
+        if isinstance(o, dt):
             return o.isoformat()
 
         if isinstance(o, bytes):
@@ -33,10 +31,42 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
+class TLUSer(telethon.tl.types.User):
+    message_count = -1
+
+    def __init__(self, id: int, message_count,
+                 first_name: Optional[str] = None, last_name: Optional[str] = None, username: Optional[str] = None,
+                 phone: Optional[str] = None):
+        telethon.tl.types.User.__init__(self, id=id, first_name=first_name, last_name=last_name, username=username,
+                                        phone=phone)
+        self.message_count = message_count
+
+
+class UserStat:
+
+    def __init__(self, messages):
+        self.count = len(messages)
+        self.rate = datetime.timedelta(seconds=0)
+        self.total_length = 0
+        self.word = ""
+        self.time = ""
+        if (len(messages) < 2):
+            return
+        last_time = messages[0]['date']
+        first_time = messages[len(messages) - 1]['date']
+        self.rate = datetime.timedelta(seconds=(last_time - first_time).total_seconds() / self.count)
+
+        self.total_length = 0
+        for mes in messages:
+            self.total_length += len(mes.text)
+
+
+
 class TLAgent:
     client = None
     phone = ""
     username = ""
+    user_num = -1
 
     @staticmethod
     def set(username, phone):
@@ -127,11 +157,10 @@ class TLAgent:
 
         data = json.load(f)
         for input in data:
-            users.append(telethon.tl.types.User(int(input['id']), first_name=input['first_name'],
-                                               last_name=input['last_name'], phone=input['phone'],
-                                               username=input['username']))
+            users.append(TLUSer(int(input['id']), first_name=input['first_name'],
+                                last_name=input['last_name'], phone=input['phone'],
+                                username=input['username'], message_count=input['messages']))
         return users
-
 
     @staticmethod
     async def getUsers():
@@ -140,6 +169,10 @@ class TLAgent:
         else:
             print("GETTING USERS FROM JSON")
             return await TLAgent.scanUsers()
+        return await TLAgent.downloadUsers()
+
+    @staticmethod
+    async def downloadUsers():
         contact_ids = None
         contacts = None
         try:
@@ -148,8 +181,8 @@ class TLAgent:
             print('All contacts collected successfully')
         except Exception as e:
             print(e)
-
         all_contacts = []
+        tlusers = []
         for user in contacts.users:
             if user.id != None:
                 id = str(user.id)
@@ -164,17 +197,19 @@ class TLAgent:
             else:
                 lname = " "
             # print(user)
+            tlusers.append(TLUSer(id=user.id, message_count=-1, first_name=user.first_name, last_name=user.last_name,
+                                  username=user.username, phone=user.phone))
             all_contacts.append({"id": user.id, "first_name": user.first_name, "last_name": user.last_name,
-                                 "username": user.username, "phone": user.phone, "messages": None})
+                                 "username": user.username, "phone": user.phone, "messages": -1})
             with open('dat\\data_users.json', 'w', encoding='utf-8') as outfile:
                 json.dump(all_contacts, outfile)
-        return contacts.users
+        return tlusers
 
     @staticmethod
-    async def getMessages():
-        user_id = TLAgent.entity
+    async def getMessages(user):
+        print("Getting messages")
+        user_id = user.id
         entity = user_id
-        print(TLAgent.user.first_name, " ", TLAgent.user.last_name)
 
         my_channel = await TLAgent.client.get_entity(entity)
 
@@ -183,7 +218,7 @@ class TLAgent:
         all_messages = []
         total_messages = 0
         total_count_limit = 0
-
+        serializeble_messages = []
         while True:
             history = await TLAgent.client(GetHistoryRequest(
                 peer=my_channel,
@@ -200,10 +235,15 @@ class TLAgent:
             messages = history.messages
             for this_message in messages:
                 all_messages.append(this_message.to_dict())
+                serializeble_messages.append({"text": this_message.message, "out": this_message.out,
+                                              "date": this_message.date, "id": this_message.id})
             offset_id = messages[len(messages) - 1].id
             total_messages = len(all_messages)
             print(all_messages[len(all_messages) - 1])
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
         print(total_messages)
-        return all_messages
+        with open('dat\\' + user.username + '.json', 'w', encoding='utf-8') as outfile:
+            json.dump(serializeble_messages, outfile, cls=DateTimeEncoder)
+        UserStat(all_messages)
+        return total_messages

@@ -1,5 +1,6 @@
 import asyncio
 
+import telethon.tl.types
 from kivy.app import App
 from kivy.app import async_runTouchApp
 from kivy.lang import Builder
@@ -10,13 +11,14 @@ from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from database import DataBase
 from tlagent import TLAgent
+from tlagent import TLUSer
 
 
 class Table(BoxLayout):
     orientation = 'vertical'
     size_hint_y = None
-        # height = minimum_height
-        # padding = 50, 50, 50, 50
+    # height = minimum_height
+    # padding = 50, 50, 50, 50
     def __init__(self, **kwargs):
         super(Table, self).__init__(**kwargs)
 
@@ -28,44 +30,58 @@ class Table(BoxLayout):
         for row in rows:
             self.add_widget(row)
 
+    def clearRows(self):
+        self.clear_widgets()
+
 
 my_users = []
 
 class Row(BoxLayout):
     txt = ObjectProperty(None)
     phone = ObjectProperty(None)
+    count = ObjectProperty(None)
     id = -1
 
-    def __init__(self, name, phone, id, **kwargs):
+    def __init__(self, name, phone, id, count, **kwargs):
         super(Row, self).__init__(**kwargs)
         self.name.text = name
         self.phone.text = phone
         self.id = id
+        if count != -1:
+            self.count.text = str(count)
 
     @staticmethod
     def initArr(users):
         rows = []
-        count = 0
+        id_count = 0
         for user in users:
             text = str(user.first_name) + "\n" + str(user.last_name)
-            rows.append(Row(text, "+" + str(user.phone), count))
-            count += 1
+            rows.append(Row(text, "+" + str(user.phone), id_count, user.message_count))
+            id_count += 1
         return rows
+
     def analyse(self):
         print(self.id)
         print(my_users[self.id])
+        TLAgent.user_num = self.id
+        UserWindow.current_user = my_users[self.id]
+        sm.current = 'user'
 
 
 class LoginCodeWindow(Screen):
     code = ObjectProperty(None)
+    wrong_code = ObjectProperty(None)
 
     async def _submit(self):
         try:
             await TLAgent.tryCode(int(self.code.text))
             await LoginWindow.getUsersTL()
+            self.wrong_code.text = ""
             sm.current = "main"
         except Exception:
             print("Wrong code")
+            self.wrong_code.text = "Wrong code"
+
 
     def submit(self):
         thisloop = asyncio.get_event_loop()
@@ -146,13 +162,59 @@ class MainWindow(Screen):
     current = ""
 
     def on_enter(self, *args):
+        self.table.clearRows()
         self.table.addAll(Row.initArr(my_users))
 
     def logOut(self):
         sm.current = "login"
 
+    def refresh(self):
+        thisloop = asyncio.get_event_loop()
+        coroutine = self._refresh()
+        thisloop.run_until_complete(coroutine)
+
+    async def _refresh(self):
+        result = await TLAgent.downloadUsers()
+        if result is not None:
+            my_users.clear()
+            for user in result:
+                my_users.append(user)
+            self.table.clearRows()
+            self.table.addAll(Row.initArr(my_users))
+
+    def back(self):
+        sm.current = "login"
+
+
 class UserWindow(Screen):
-    pass
+    username = ObjectProperty(None)
+    login = ObjectProperty(None)
+    phone = ObjectProperty(None)
+    count = ObjectProperty(None)
+    current_user = TLUSer(id=-1, message_count=-1)
+
+    def on_enter(self, *args):
+        self.username.text = self.current_user.first_name + " " + self.current_user.last_name
+        self.phone.text = "+" + str(self.current_user.phone)
+        self.login.text = self.current_user.username
+        if self.current_user.message_count != -1:
+            self.count.text = str(self.current_user.message_count)
+        else:
+            self.count.text = "Message count unknown"
+
+    def back(self):
+        sm.current = 'main'
+
+    def analyse(self):
+        thisloop = asyncio.get_event_loop()
+        coroutine = self._analyse()
+        thisloop.run_until_complete(coroutine)
+
+
+    async def _analyse(self):
+        count = await TLAgent.getMessages(self.current_user)
+        self.current_user.message_count = count
+        self.count.text = str(count)
 
 
 class WindowManager(ScreenManager):
