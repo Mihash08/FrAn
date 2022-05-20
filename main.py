@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 import telethon.tl.types
 from kivy.app import App
@@ -9,10 +10,13 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.core.window import Window
 from tlagent import TLAgent
 from tlagent import TLUSer
 
 
+Window.size = (800, 400)
+Window.minimum_width, Window.minimum_height = Window.size
 class Table(BoxLayout):
     orientation = 'vertical'
     size_hint_y = None
@@ -116,9 +120,7 @@ class LoginWindow(Screen):
             print("Got users")
 
     async def logIn(self):
-        # TODO uncomment this and delete next line
-        # TLAgent.set(self.username.text, self.phone.text)
-        TLAgent.set("Mihash08", "+79251851096")
+        TLAgent.set(self.username.text, self.phone.text)
 
         result = await TLAgent.logIn()
         if result == -1:
@@ -265,4 +267,5 @@ class MyMainApp(App):
 
 
 if __name__ == "__main__":
+    TLAgent.clearJSON()
     MyMainApp().run()

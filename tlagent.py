@@ -100,10 +100,11 @@ class UserStat:
         for mes in messages:
             if 'message' in mes:
                 for word in mes['message'].split(" "):
-                    if word in word_dict.keys():
-                        word_dict[word] += 1
-                    else:
-                        word_dict[word] = 1
+                    if word != "":
+                        if word in word_dict.keys():
+                            word_dict[word] += 1
+                        else:
+                            word_dict[word] = 1
                 self.total_length += len(str(mes['message']))
             time_dict[mes['date'].hour] += 1
         max_hour = 0
@@ -214,12 +215,12 @@ class TLAgent:
 
     @staticmethod
     async def getUsers():
-        if os.stat('dat\\data_users.json').st_size == 0:
-            print("DOWNLOADING USERS")
-            return await TLAgent.downloadUsers()
-        else:
-            print("GETTING USERS FROM JSON")
-            return await TLAgent.getUsersFromJSON()
+        if os.path.exists('dat\\data_users.json'):
+            if os.stat('dat\\data_users.json').st_size != 0:
+                print("GETTING USERS FROM JSON")
+                return await TLAgent.getUsersFromJSON()
+        print("DOWNLOADING USERS")
+        return await TLAgent.downloadUsers()
 
     @staticmethod
     async def downloadUsers():
@@ -296,3 +297,9 @@ class TLAgent:
         stats = UserStat(all_messages)
         user.stats = stats
         return stats
+
+    @staticmethod
+    def clearJSON():
+        if os.path.exists('dat\\data_users.json'):
+            if os.stat('dat\\data_users.json').st_size != 0:
+                open('dat\\data_users.json').close()
