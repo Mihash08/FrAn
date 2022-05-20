@@ -292,7 +292,7 @@ class TLAgent:
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
         print(total_messages)
-        with open('dat\\' + user.username + '.json', 'w', encoding='utf-8') as outfile:
+        with open('dat\\' + str(user.username) + str(user.phone) + '.json', 'w', encoding='utf-8') as outfile:
             json.dump(serializeble_messages, outfile, cls=DateTimeEncoder)
         stats = UserStat(all_messages)
         user.stats = stats

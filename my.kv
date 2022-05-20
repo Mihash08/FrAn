@@ -126,6 +126,8 @@
             pos_hint:{"x":0.66,"y":0.75}
             size_hint: 0.34, 0.25
             text: "Sort"
+            on_release:
+                root.sort()
         ScrollView:
             size_hint: 1, 0.75
             do_scroll_x: False

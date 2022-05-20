@@ -168,6 +168,16 @@ class MainWindow(Screen):
     def logOut(self):
         sm.current = "login"
 
+    def sort(self):
+        thisloop = asyncio.get_event_loop()
+        coroutine = self._sort()
+        thisloop.run_until_complete(coroutine)
+
+    async def _sort(self):
+        my_users.sort(key=lambda x: x.message_count, reverse=True)
+        self.table.clearRows()
+        self.table.addAll(Row.initArr(my_users))
+
     def refresh(self):
         thisloop = asyncio.get_event_loop()
         coroutine = self._refresh()
@@ -201,7 +211,7 @@ class UserWindow(Screen):
     def on_enter(self, *args):
         self.username.text = self.current_user.first_name + " " + self.current_user.last_name
         self.phone.text = "+" + str(self.current_user.phone)
-        self.login.text = self.current_user.username
+        self.login.text = str(self.current_user.username)
         self.wait.text = ''
         if self.current_user.stats.count != -1:
             self.count.text = "Message count: " + str(self.current_user.stats.count)
