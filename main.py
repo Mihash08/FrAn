@@ -9,7 +9,6 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
-from database import DataBase
 from tlagent import TLAgent
 from tlagent import TLUSer
 
@@ -61,7 +60,6 @@ class Row(BoxLayout):
         return rows
 
     def analyse(self):
-        print(self.id)
         print(my_users[self.id])
         TLAgent.user_num = self.id
         UserWindow.current_user = my_users[self.id]
@@ -191,30 +189,58 @@ class UserWindow(Screen):
     login = ObjectProperty(None)
     phone = ObjectProperty(None)
     count = ObjectProperty(None)
+    rate = ObjectProperty(None)
+    length = ObjectProperty(None)
+    hour = ObjectProperty(None)
+    wait = ObjectProperty(None)
+    word = ObjectProperty(None)
     current_user = TLUSer(id=-1, message_count=-1)
 
     def on_enter(self, *args):
         self.username.text = self.current_user.first_name + " " + self.current_user.last_name
         self.phone.text = "+" + str(self.current_user.phone)
         self.login.text = self.current_user.username
-        if self.current_user.message_count != -1:
-            self.count.text = str(self.current_user.message_count)
+        self.wait.text = ''
+        if self.current_user.stats.count != -1:
+            self.count.text = "Message count: " + str(self.current_user.stats.count)
+            self.rate.text = "Message rate: " + str(self.current_user.stats.rate)
+            self.length.text = "Total message length: " + str(self.current_user.stats.total_length)
+            self.hour.text = "Most active hour: " + str(self.current_user.stats.max_time)
+            self.word.text = "Most used word: " + str(self.current_user.stats.word)
         else:
             self.count.text = "Message count unknown"
+            self.rate.text = "Message rate unknown"
+            self.length.text = "Total message length unknown"
+            self.hour.text = "Most active hour unknown"
+            self.word.text = "Most used word unknown"
 
     def back(self):
         sm.current = 'main'
+        self.wait.text = ''
 
     def analyse(self):
         thisloop = asyncio.get_event_loop()
         coroutine = self._analyse()
         thisloop.run_until_complete(coroutine)
-
+        self.wait.text = 'Finished analysing'
 
     async def _analyse(self):
-        count = await TLAgent.getMessages(self.current_user)
-        self.current_user.message_count = count
-        self.count.text = str(count)
+        self.wait.text = 'Please wait... Loading messages...'
+        stats = await TLAgent.getMessages(self.current_user)
+        self.current_user.message_count = stats.count
+        if stats.count != -1:
+            self.count.text = "Message count: " + str(stats.count)
+            self.rate.text = "Message rate: " + str(stats.rate)
+            self.length.text = "Total message length: " + str(stats.total_length)
+            self.hour.text = "Most active hour: " + str(stats.max_time)
+            self.word.text = "Most used word: " + str(stats.word)
+        else:
+            self.count.text = "Message count unknown"
+            self.rate.text = "Message rate unknown"
+            self.length.text = "Total message length unknown"
+            self.hour.text = "Most active hour unknown"
+            self.word.text = "Most used word unknown"
+
 
 
 class WindowManager(ScreenManager):
@@ -225,7 +251,6 @@ class WindowManager(ScreenManager):
 kv = Builder.load_file("my.kv")
 
 sm = WindowManager()
-db = DataBase("data.txt")
 
 screens = [LoginWindow(name="login"), LoginCodeWindow(name="code"), MainWindow(name="main"), UserWindow(name="user")]
 for screen in screens:

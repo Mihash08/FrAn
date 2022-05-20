@@ -40,27 +40,85 @@ class TLUSer(telethon.tl.types.User):
         telethon.tl.types.User.__init__(self, id=id, first_name=first_name, last_name=last_name, username=username,
                                         phone=phone)
         self.message_count = message_count
+        self.stats = UserStat()
 
 
 class UserStat:
 
-    def __init__(self, messages):
+    def __init__(self, messages=None):
+        if not messages:
+            self.count = -1
+            self.rate = datetime.timedelta(seconds=0)
+            self.total_length = -1
+            self.word = ""
+            self.max_time = ""
+            self.max_time_messages = 0
+            return
         self.count = len(messages)
         self.rate = datetime.timedelta(seconds=0)
-        self.total_length = 0
+        self.total_length = -1
         self.word = ""
-        self.time = ""
+        self.max_time = ""
+        self.max_time_messages = 0
         if (len(messages) < 2):
             return
         last_time = messages[0]['date']
         first_time = messages[len(messages) - 1]['date']
         self.rate = datetime.timedelta(seconds=(last_time - first_time).total_seconds() / self.count)
+        time_dict = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0,
+            10: 0,
+            11: 0,
+            12: 0,
+            13: 0,
+            14: 0,
+            15: 0,
+            16: 0,
+            17: 0,
+            18: 0,
+            19: 0,
+            20: 0,
+            21: 0,
+            22: 0,
+            23: 0,
+        }
+
+        word_dict = {
+            "": 0
+        }
 
         self.total_length = 0
         for mes in messages:
-            self.total_length += len(mes.text)
-
-
+            if 'message' in mes:
+                for word in mes['message'].split(" "):
+                    if word in word_dict.keys():
+                        word_dict[word] += 1
+                    else:
+                        word_dict[word] = 1
+                self.total_length += len(str(mes['message']))
+            time_dict[mes['date'].hour] += 1
+        max_hour = 0
+        max_messages = 0
+        for key in time_dict.keys():
+            if time_dict[key] > max_messages:
+                max_messages = time_dict[key]
+                max_hour = key
+        self.max_time = max_hour
+        self.max_time_messages = max_messages
+        max_word = 0
+        for key in word_dict.keys():
+            if word_dict[key] > max_word:
+                max_word = word_dict[key]
+                self.word = key
 
 class TLAgent:
     client = None
@@ -141,16 +199,8 @@ class TLAgent:
         else:
             return 0
 
-        if not await TLAgent.client.is_user_authorized():
-            await TLAgent.client.send_code_request(TLAgent.phone)
-            try:
-                await TLAgent.client.sign_in(TLAgent.phone, input('Enter the code: '))
-            except SessionPasswordNeededError:
-                await TLAgent.client.sign_in(password=input('Password: '))
-        return 1
-
     @staticmethod
-    async def scanUsers():
+    async def getUsersFromJSON():
         users = []
 
         f = open('dat\\data_users.json')
@@ -165,19 +215,17 @@ class TLAgent:
     @staticmethod
     async def getUsers():
         if os.stat('dat\\data_users.json').st_size == 0:
-            print("SCANNING USERS")
+            print("DOWNLOADING USERS")
+            return await TLAgent.downloadUsers()
         else:
             print("GETTING USERS FROM JSON")
-            return await TLAgent.scanUsers()
-        return await TLAgent.downloadUsers()
+            return await TLAgent.getUsersFromJSON()
 
     @staticmethod
     async def downloadUsers():
-        contact_ids = None
         contacts = None
         try:
             contacts = await TLAgent.client(functions.contacts.GetContactsRequest(hash=0))
-            contact_ids = (user.id for user in contacts.users)
             print('All contacts collected successfully')
         except Exception as e:
             print(e)
@@ -245,5 +293,6 @@ class TLAgent:
         print(total_messages)
         with open('dat\\' + user.username + '.json', 'w', encoding='utf-8') as outfile:
             json.dump(serializeble_messages, outfile, cls=DateTimeEncoder)
-        UserStat(all_messages)
-        return total_messages
+        stats = UserStat(all_messages)
+        user.stats = stats
+        return stats

@@ -170,7 +170,11 @@
     login: login
     phone: phone
     count: count
-
+    rate: rate
+    length: length
+    hour: hour
+    word: word
+    wait: wait
 
     FloatLayout:
         Label:
@@ -197,6 +201,36 @@
             font_size: (500**2 + root.height**2) / 13**4
             id: count
             text: 'Message count unknown'
+        Label:
+            pos_hint:{"x":0.33,"y":0.50}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: rate
+            text: 'Message rate unknown'
+        Label:
+            pos_hint:{"x":0.33,"y":0.45}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: length
+            text: 'Total message length unknown'
+        Label:
+            pos_hint:{"x":0.33,"y":0.40}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: hour
+            text: 'Most active hour unknown'
+        Label:
+            pos_hint:{"x":0.33,"y":0.35}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 13**4
+            id: word
+            text: 'Most used word unknown'
+        Label:
+            pos_hint:{"x":0.33,"y":0.25}
+            size_hint: 0.33, 0.25
+            font_size: (500**2 + root.height**2) / 12**4
+            id: wait
+            text: ''
         Button:
             pos_hint:{"x":0,"y":0}
             size_hint: 0.33, 0.25
