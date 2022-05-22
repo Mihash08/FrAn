@@ -90,6 +90,10 @@ class LoginCodeWindow(Screen):
         coroutine = self._submit()
         thisloop.run_until_complete(coroutine)
 
+    def on_enter(self, *args):
+        thisloop = asyncio.get_event_loop()
+        coroutine = TLAgent.clearJSON()
+        # thisloop.run_until_complete(coroutine)
 
     def login(self):
         self.reset()
@@ -193,6 +197,9 @@ class MainWindow(Screen):
             self.table.addAll(Row.initArr(my_users))
 
     def back(self):
+        thisloop = asyncio.get_event_loop()
+        coroutine = TLAgent.logOut()
+        thisloop.run_until_complete(coroutine)
         sm.current = "login"
 
 

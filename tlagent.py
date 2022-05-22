@@ -137,40 +137,25 @@ class TLAgent:
     async def _start(phone):
         if not TLAgent.client.is_connected():
             await TLAgent.client.connect()
-
         me = await TLAgent.client.get_me()
         if me is not None:
             return TLAgent.client
-
         while callable(phone):
             value = phone()
             if inspect.isawaitable(value):
                 value = await value
-
             phone = utils.parse_phone(value) or phone
-
-        me = None
-        attempts = 0
-        # two_step_detected = False
         await TLAgent.client.send_code_request(phone)
 
     @staticmethod
     async def tryCode(code):
-        # sign_up = False
         try:
             value = code
             if inspect.isawaitable(value):
                 value = await value
-
             if not value:
                 raise errors.PhoneCodeEmptyError(request=None)
-
-            # Raises SessionPasswordNeededError if 2FA enabled
             me = await TLAgent.client.sign_in(TLAgent.phone, code=value)
-        # except errors.SessionPasswordNeededError:
-        #    two_step_detected = True
-        #    break
-
         except (errors.PhoneCodeEmptyError,
                 errors.PhoneCodeExpiredError,
                 errors.PhoneCodeHashEmptyError,
@@ -300,6 +285,8 @@ class TLAgent:
 
     @staticmethod
     def clearJSON():
+        if not os.path.exists("dat"):
+            os.mkdir('dat')
         if os.path.exists('dat\\data_users.json'):
-            if os.stat('dat\\data_users.json').st_size != 0:
-                open('dat\\data_users.json').close()
+            open('dat\\data_users.json', 'w').close()
+
