@@ -14,8 +14,8 @@ from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.tl.types import PeerChannel, PeerUser
 
 # username = "Mihash08"
-api_id = 9770358
-api_hash = "e9d3d03202a6d1c827187ac8cbc604b9"
+api_id = #api_id
+api_hash = #api_hash
 
 
 # phone = "+79251851096"
