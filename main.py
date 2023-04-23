@@ -104,17 +104,16 @@ class Row(BoxLayout):
         sm.current = 'user'
 
 class BaseThread(threading.Thread):
-    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
-        target = kwargs.pop('target')
+    def __init__(self, target, callback, callback_args, *args, **kwargs):
         super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
         self.callback = callback
         self.method = target
         self.callback_args = callback_args
 
     def target_with_callback(self):
-        self.method()
+        res = self.method()
         if self.callback is not None:
-            self.callback(*self.callback_args)
+            self.callback(res)
 
 class LoginCodeWindow(Screen):
     code = ObjectProperty(None)
@@ -158,15 +157,30 @@ class LoginWindow(Screen):
     wrong_login = ObjectProperty(None)
 
     def my_thread_job(self):
-        # do any things here
-        print("thread start successfully and sleep for 5 seconds")
-        time.sleep(5)
-        print("thread ended successfully!")
+        print("result")
 
-    def cb(param):
-        # this is run after your thread end
-        print("callback function called")
-        print(param)
+        result =-1
+        tlAgent.set(self.username.text, self.phone.text)
+        async def asyncfunc():
+            result = await tlAgent.logIn()
+        asyncio.run(asyncfunc())
+
+        print(result)
+        return result
+
+
+    def cb(self, result):
+        print(result)
+        if result == -1:
+            self.wrong_login.text = "Wrong phone or (and) username"
+        elif result == 0:
+            self.wrong_login.text = ""
+            sm.current = "code"
+        else:
+            self.wrong_login.text = ""
+            LoginWindow.getUsersTL()
+
+            sm.current = "main"
 
     @staticmethod
     async def getUsersTL():
@@ -183,31 +197,17 @@ class LoginWindow(Screen):
                     user.first_name = ""
             print("Got users")
 
-    async def logIn(self):
-        self.add_widget(LoadingScreen())
+    def logIn(self):
         print("loading")
+        result = -1
         thread = BaseThread(
-            name='test',
-            target=self.my_thread_job,
-            callback=self.cb,
+            self.my_thread_job,
+            self.cb,
             callback_args=([])
         )
-
+        print("start")
         thread.start()
-        # tlAgent.set(self.username.text, self.phone.text)
-        #
-        # result = await tlAgent.logIn()
-        result = -1
-        if result == -1:
-            self.wrong_login.text = "Wrong phone or (and) username"
-        elif result == 0:
-            self.wrong_login.text = ""
-            sm.current = "code"
-        else:
-            self.wrong_login.text = ""
-            await LoginWindow.getUsersTL()
 
-            sm.current = "main"
             # await agent.getUsers()
 
     async def logOut(self):
@@ -215,14 +215,16 @@ class LoginWindow(Screen):
 
     def loginBtn(self):
         self.wrong_login.text = "Connecting..."
-        thisloop = asyncio.get_event_loop()
-        coroutine = self.logIn()
-        thisloop.run_until_complete(coroutine)
+        self.add_widget(LoadingScreen())
+        self.logIn()
+        # thisloop = asyncio.get_event_loop()
+        # asyncio.run(coroutine)
 
     def logOutBtn(self):
-        thisloop = asyncio.get_event_loop()
+        thisloop = asyncio.new_event_loop()
         coroutine = self.logOut()
         thisloop.run_until_complete(coroutine)
+
 
     def reset(self):
         self.phone.text = ""
