@@ -1,5 +1,7 @@
 import asyncio
 import os
+import time
+import threading
 
 import telethon.tl.types
 from kivy.app import App
@@ -101,6 +103,18 @@ class Row(BoxLayout):
         UserWindow.current_user = my_users[self.id]
         sm.current = 'user'
 
+class BaseThread(threading.Thread):
+    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
+        target = kwargs.pop('target')
+        super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
+        self.callback = callback
+        self.method = target
+        self.callback_args = callback_args
+
+    def target_with_callback(self):
+        self.method()
+        if self.callback is not None:
+            self.callback(*self.callback_args)
 
 class LoginCodeWindow(Screen):
     code = ObjectProperty(None)
@@ -143,6 +157,17 @@ class LoginWindow(Screen):
     username = ObjectProperty(None)
     wrong_login = ObjectProperty(None)
 
+    def my_thread_job(self):
+        # do any things here
+        print("thread start successfully and sleep for 5 seconds")
+        time.sleep(5)
+        print("thread ended successfully!")
+
+    def cb(param):
+        # this is run after your thread end
+        print("callback function called")
+        print(param)
+
     @staticmethod
     async def getUsersTL():
         print("Getting users")
@@ -161,9 +186,18 @@ class LoginWindow(Screen):
     async def logIn(self):
         self.add_widget(LoadingScreen())
         print("loading")
-        tlAgent.set(self.username.text, self.phone.text)
+        thread = BaseThread(
+            name='test',
+            target=self.my_thread_job,
+            callback=self.cb,
+            callback_args=([])
+        )
 
-        result = await tlAgent.logIn()
+        thread.start()
+        # tlAgent.set(self.username.text, self.phone.text)
+        #
+        # result = await tlAgent.logIn()
+        result = -1
         if result == -1:
             self.wrong_login.text = "Wrong phone or (and) username"
         elif result == 0:
