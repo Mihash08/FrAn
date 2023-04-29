@@ -1,19 +1,19 @@
 import asyncio
-import os
 
-import telethon.tl.types
-from kivy.app import App
-from kivy.app import async_runTouchApp
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import ObjectProperty, StringProperty
-from kivy.uix.popup import Popup
+from kivy.properties import ObjectProperty
+from kivy.app import App
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from telethon import errors
+from kivy.clock import Clock
 from kivy.core.window import Window
-from tlagent import TLAgent
-from tlagent import TLUSer
+from Network.tlagent import TLAgent
+from Network.tlagent import TLUSer
 
+tlAgent = TLAgent
 
 Window.size = (800, 400)
 Window.minimum_width, Window.minimum_height = Window.size
@@ -38,6 +38,25 @@ class Table(BoxLayout):
 
 
 my_users = []
+
+class LoadingScreen(FloatLayout):
+    def __init__(self, **kwargs):
+        super(LoadingScreen, self).__init__(**kwargs)
+
+        # Create the label
+        self.label = Label(text="Loading...", font_size=50)
+        self.label.size_hint = (0.8, 0.2)
+        self.label.pos_hint = {'x': 0.1, 'y': 0.7}
+        self.add_widget(self.label)
+
+        # Schedule the label update
+        self.event = Clock.schedule_interval(self.update_label, 1 / 2.)
+
+    def update_label(self, dt):
+        if self.label.text.endswith("..."):
+            self.label.text = "Loading"
+        else:
+            self.label.text += "."
 
 class Row(BoxLayout):
     txt = ObjectProperty(None)
@@ -65,7 +84,7 @@ class Row(BoxLayout):
 
     def analyse(self):
         print(my_users[self.id])
-        TLAgent.user_num = self.id
+        tlAgent.user_num = self.id
         UserWindow.current_user = my_users[self.id]
         sm.current = 'user'
 
@@ -76,12 +95,15 @@ class LoginCodeWindow(Screen):
 
     async def _submit(self):
         try:
-            await TLAgent.tryCode(int(self.code.text))
+            await tlAgent.tryCode(int(self.code.text))
             await LoginWindow.getUsersTL()
             self.wrong_code.text = ""
             sm.current = "main"
-        except Exception:
+        except (errors.SessionPasswordNeededError):
+            self.wrong_code.text = "Two-factor error"
+        except Exception as e:
             print("Wrong code")
+            print(e)
             self.wrong_code.text = "Wrong code"
 
 
@@ -92,7 +114,7 @@ class LoginCodeWindow(Screen):
 
     def on_enter(self, *args):
         thisloop = asyncio.get_event_loop()
-        coroutine = TLAgent.clearJSON()
+        coroutine = tlAgent.clearJSON()
         # thisloop.run_until_complete(coroutine)
 
     def login(self):
@@ -111,7 +133,7 @@ class LoginWindow(Screen):
     @staticmethod
     async def getUsersTL():
         print("Getting users")
-        result = await TLAgent.getUsers()
+        result = await tlAgent.getUsers()
         if result == -1:
             print("ERROR WHILE GETTING USERS")
         else:
@@ -124,9 +146,11 @@ class LoginWindow(Screen):
             print("Got users")
 
     async def logIn(self):
-        TLAgent.set(self.username.text, self.phone.text)
+        self.add_widget(LoadingScreen())
+        print("loading")
+        tlAgent.set(self.username.text, self.phone.text)
 
-        result = await TLAgent.logIn()
+        result = await tlAgent.logIn()
         if result == -1:
             self.wrong_login.text = "Wrong phone or (and) username"
         elif result == 0:
@@ -140,7 +164,7 @@ class LoginWindow(Screen):
             # await agent.getUsers()
 
     async def logOut(self):
-        await TLAgent.logOut()
+        await tlAgent.logOut()
 
     def loginBtn(self):
         self.wrong_login.text = "Connecting..."
@@ -188,7 +212,7 @@ class MainWindow(Screen):
         thisloop.run_until_complete(coroutine)
 
     async def _refresh(self):
-        result = await TLAgent.downloadUsers()
+        result = await tlAgent.fetchUsers()
         if result is not None:
             my_users.clear()
             for user in result:
@@ -198,7 +222,7 @@ class MainWindow(Screen):
 
     def back(self):
         thisloop = asyncio.get_event_loop()
-        coroutine = TLAgent.logOut()
+        coroutine = tlAgent.logOut()
         thisloop.run_until_complete(coroutine)
         sm.current = "login"
 
@@ -245,7 +269,7 @@ class UserWindow(Screen):
 
     async def _analyse(self):
         self.wait.text = 'Please wait... Loading messages...'
-        stats = await TLAgent.getMessages(self.current_user)
+        stats = await tlAgent.getMessages(self.current_user)
         self.current_user.message_count = stats.count
         if stats.count != -1:
             self.count.text = "Message count: " + str(stats.count)
@@ -267,7 +291,7 @@ class WindowManager(ScreenManager):
 
 
 
-kv = Builder.load_file("my.kv")
+kv = Builder.load_file("../my.kv")
 
 sm = WindowManager()
 
@@ -284,5 +308,5 @@ class MyMainApp(App):
 
 
 if __name__ == "__main__":
-    TLAgent.clearJSON()
+    tlAgent.clearJSON()
     MyMainApp().run()
