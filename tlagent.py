@@ -2,23 +2,19 @@ import json
 import inspect
 import os
 import sys
-import datetime
 
-from datetime import timedelta, datetime as dt
-from typing import Optional, List
+from datetime import datetime as dt
+from typing import Optional
 
 import telethon.tl.types
 from telethon import TelegramClient, functions, utils, errors
-from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import PeerChannel, PeerUser
-from dataFetcher import DataFetcher
-from dataProcesser import UserStat
+from Network.dataFetcher import DataFetcher
+from Model.UserStat import UserStat
 
 # username = "Mihash08"
 api_id = 9770358
 api_hash = "e9d3d03202a6d1c827187ac8cbc604b9"
-
 
 # phone = "+79251851096"
 
