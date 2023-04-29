@@ -10,6 +10,7 @@ class DataFetcher:
     @staticmethod
     async def logOut():
         return
+
     @staticmethod
     async def getUsers():
         return
