@@ -1,17 +1,7 @@
-import json
-import inspect
-import os
-import sys
 import datetime
+import json
+from datetime import datetime as dt
 
-from datetime import timedelta, datetime as dt
-from typing import Optional, List
-
-import telethon.tl.types
-from telethon import TelegramClient, functions, utils, errors
-from telethon.errors import SessionPasswordNeededError
-from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import PeerChannel, PeerUser
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):

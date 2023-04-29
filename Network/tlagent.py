@@ -2,18 +2,15 @@ import json
 import inspect
 import os
 import sys
-import datetime
 
-from datetime import timedelta, datetime as dt
-from typing import Optional, List
+from datetime import datetime as dt
+from typing import Optional
 
 import telethon.tl.types
 from telethon import TelegramClient, functions, utils, errors
-from telethon.errors import SessionPasswordNeededError
 from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import PeerChannel, PeerUser
-from dataFetcher import DataFetcher
-from dataProcesser import UserStat
+from Network.dataFetcher import DataFetcher
+from Model.dataProcesser import UserStat
 
 # username = "Mihash08"
 api_id = 9770358
@@ -115,7 +112,7 @@ class TLAgent(DataFetcher):
     async def getUsersFromJSON():
         users = []
 
-        f = open('dat\\data_users.json')
+        f = open('../dat/data_users.json')
 
         data = json.load(f)
         for input in data:
@@ -126,8 +123,8 @@ class TLAgent(DataFetcher):
 
     @staticmethod
     async def getUsers():
-        if os.path.exists('dat\\data_users.json'):
-            if os.stat('dat\\data_users.json').st_size != 0:
+        if os.path.exists('../dat/data_users.json'):
+            if os.stat('../dat/data_users.json').st_size != 0:
                 print("GETTING USERS FROM JSON")
                 return await TLAgent.getUsersFromJSON()
         print("FETCHING USERS")
@@ -161,7 +158,7 @@ class TLAgent(DataFetcher):
                                   username=user.username, phone=user.phone))
             all_contacts.append({"id": user.id, "first_name": user.first_name, "last_name": user.last_name,
                                  "username": user.username, "phone": user.phone, "messages": -1})
-            with open('dat\\data_users.json', 'w', encoding='utf-8') as outfile:
+            with open('../dat/data_users.json', 'w', encoding='utf-8') as outfile:
                 json.dump(all_contacts, outfile)
         return tlusers
 
@@ -211,8 +208,8 @@ class TLAgent(DataFetcher):
 
     @staticmethod
     def clearJSON():
-        if not os.path.exists("dat"):
-            os.mkdir('dat')
-        if os.path.exists('dat\\data_users.json'):
-            open('dat\\data_users.json', 'w').close()
+        if not os.path.exists("../dat"):
+            os.mkdir('../dat')
+        if os.path.exists('../dat/data_users.json'):
+            open('../dat/data_users.json', 'w').close()
 

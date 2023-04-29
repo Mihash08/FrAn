@@ -1,30 +1,17 @@
 import asyncio
-import os
 
-import telethon.tl.types
-from kivy.app import App
-from kivy.app import async_runTouchApp
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty
 from kivy.app import App
-from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.spinner import Spinner
-from kivy.clock import Clock
-from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from telethon import errors
 from kivy.clock import Clock
 from kivy.core.window import Window
-from tlagent import TLAgent
-from tlagent import TLUSer
-from dataFetcher import DataFetcher
-
-
-
+from Network.tlagent import TLAgent
+from Network.tlagent import TLUSer
 
 tlAgent = TLAgent
 
@@ -304,7 +291,7 @@ class WindowManager(ScreenManager):
 
 
 
-kv = Builder.load_file("my.kv")
+kv = Builder.load_file("../my.kv")
 
 sm = WindowManager()
 
