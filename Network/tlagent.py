@@ -13,8 +13,8 @@ from Network.dataFetcher import DataFetcher
 from Model.dataProcesser import UserStat
 
 # username = "Mihash08"
-api_id = #api_id
-api_hash = #api_hash
+api_id = ""
+api_hash = ""
 
 
 # phone = "+79251851096"
@@ -200,7 +200,7 @@ class TLAgent(DataFetcher):
             if total_count_limit != 0 and total_messages >= total_count_limit:
                 break
         print(total_messages)
-        with open('dat\\' + str(user.username) + str(user.phone) + '.json', 'w', encoding='utf-8') as outfile:
+        with open("../dat/" + str(user.username) + str(user.phone) + '.json', 'w', encoding='utf-8') as outfile:
             json.dump(serializeble_messages, outfile, cls=DateTimeEncoder)
         stats = UserStat(all_messages)
         user.stats = stats
